@@ -105,6 +105,7 @@ TEST_CASE("consumer groups", "[handle_base]") {
     config.set("group.id", consumer_group);
     config.set("client.id", client_id);
     config.set("enable.auto.commit", false);
+    config.set("enable.partition.eof", true);
 
     // Build consumer
     Consumer consumer(config);
@@ -112,7 +113,8 @@ TEST_CASE("consumer groups", "[handle_base]") {
     ConsumerRunner runner(consumer, 0, 3);
     runner.try_join();
 
-    GroupInformation information = consumer.get_consumer_group(consumer_group);
+    GroupInformation information = consumer.get_consumer_group(consumer_group,
+                                                               milliseconds(1500));
     CHECK(information.get_name() == consumer_group);
     CHECK(information.get_protocol_type() == "consumer");
     CHECK(information.get_members().size() == 1);
