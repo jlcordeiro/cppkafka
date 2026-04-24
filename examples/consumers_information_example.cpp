@@ -1,6 +1,5 @@
 #include <stdexcept>
 #include <iostream>
-#include <boost/program_options.hpp>
 #include "cppkafka/producer.h"
 #include "cppkafka/configuration.h"
 #include "cppkafka/group_information.h"
@@ -20,34 +19,38 @@ using cppkafka::GroupInformation;
 using cppkafka::GroupMemberInformation;
 using cppkafka::MemberAssignmentInformation;
 
-namespace po = boost::program_options;
-
 int main(int argc, char* argv[]) {
     string brokers;
     string group_id;
     bool show_assignment = false;
 
-    po::options_description options("Options");
-    options.add_options()
-        ("help,h",       "produce this help message")
-        ("brokers,b",    po::value<string>(&brokers)->required(), 
-                         "the kafka broker list")
-        ("group-id,g",   po::value<string>(&group_id),
-                         "only fetch consumer group information for the specified one")
-        ("assignment,a", po::value<bool>(&show_assignment)->implicit_value(true),
-                         "show topic/partition assignment for each consumer group")
-        ;
+    for (int i = 1; i < argc; ++i) {
+        std::string_view arg = argv[i];
 
-    po::variables_map vm;
-
-    try {
-        po::store(po::command_line_parser(argc, argv).options(options).run(), vm);
-        po::notify(vm);
+        if (arg == "-h" || arg == "--help") {
+            cout << "Options:\n"
+            << "  -b, --brokers <brokers>        Kafka broker list (required)\n"
+            << "  -g, --group-id <group>         Consumer group id (optional)\n"
+            << "  -a, --assignment               Show topic/partition assignment\n";
+            return 0;
+        }
+        else if ((arg == "-b" || arg == "--brokers") && i + 1 < argc) {
+            brokers = argv[++i];
+        }
+        else if ((arg == "-g" || arg == "--group-id") && i + 1 < argc) {
+            group_id = argv[++i];
+        }
+        else if (arg == "-a" || arg == "--assignment") {
+            show_assignment = true;
+        }
+        else {
+            cout << "Unknown or invalid argument: " << arg << endl;
+            return 1;
+        }
     }
-    catch (exception& ex) {
-        cout << "Error parsing options: " << ex.what() << endl;
-        cout << endl;
-        cout << options << endl;
+
+    if (brokers.empty()) {
+        cout << "Error: brokers are required\n";
         return 1;
     }
 

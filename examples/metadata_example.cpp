@@ -1,6 +1,5 @@
 #include <stdexcept>
 #include <iostream>
-#include <boost/program_options.hpp>
 #include "cppkafka/producer.h"
 #include "cppkafka/configuration.h"
 #include "cppkafka/metadata.h"
@@ -19,28 +18,34 @@ using cppkafka::Metadata;
 using cppkafka::TopicMetadata;
 using cppkafka::BrokerMetadata;
 
-namespace po = boost::program_options;
+static void print_usage() {
+    cout << "Usage:\n"
+    << "  -b, --brokers <broker list>\n";
+}
 
 int main(int argc, char* argv[]) {
     string brokers;
 
-    po::options_description options("Options");
-    options.add_options()
-        ("help,h",     "produce this help message")
-        ("brokers,b",  po::value<string>(&brokers)->required(), 
-                       "the kafka broker list")
-        ;
+    for (int i = 1; i < argc; ++i) {
+        std::string_view arg = argv[i];
 
-    po::variables_map vm;
-
-    try {
-        po::store(po::command_line_parser(argc, argv).options(options).run(), vm);
-        po::notify(vm);
+        if (arg == "-h" || arg == "--help") {
+            print_usage();
+            return 0;
+        }
+        else if ((arg == "-b" || arg == "--brokers") && i + 1 < argc) {
+            brokers = argv[++i];
+        }
+        else {
+            cout << "Unknown or invalid argument: " << arg << endl;
+            print_usage();
+            return 1;
+        }
     }
-    catch (exception& ex) {
-        cout << "Error parsing options: " << ex.what() << endl;
-        cout << endl;
-        cout << options << endl;
+
+    if (brokers.empty()) {
+        cout << "Error: brokers not specified\n";
+        print_usage();
         return 1;
     }
 

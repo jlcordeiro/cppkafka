@@ -1,7 +1,6 @@
 #include <stdexcept>
 #include <iostream>
 #include <csignal>
-#include <boost/program_options.hpp>
 #include "cppkafka/consumer.h"
 #include "cppkafka/configuration.h"
 #include "cppkafka/utils/consumer_dispatcher.h"
@@ -20,8 +19,6 @@ using cppkafka::TopicPartition;
 using cppkafka::TopicPartitionList;
 using cppkafka::Error;
 
-namespace po = boost::program_options;
-
 function<void()> on_signal;
 
 void signal_handler(int) {
@@ -36,27 +33,33 @@ int main(int argc, char* argv[]) {
     string topic_name;
     string group_id;
 
-    po::options_description options("Options");
-    options.add_options()
-        ("help,h",     "produce this help message")
-        ("brokers,b",  po::value<string>(&brokers)->required(), 
-                       "the kafka broker list")
-        ("topic,t",    po::value<string>(&topic_name)->required(),
-                       "the topic in which to write to")
-        ("group-id,g", po::value<string>(&group_id)->required(),
-                       "the consumer group id")
-        ;
+    for (int i = 1; i < argc; ++i) {
+        std::string_view arg = argv[i];
 
-    po::variables_map vm;
-
-    try {
-        po::store(po::command_line_parser(argc, argv).options(options).run(), vm);
-        po::notify(vm);
+        if (arg == "-h" || arg == "--help") {
+            cout << "Options:\n"
+            << "  -b, --brokers <brokers>     Kafka broker list (required)\n"
+            << "  -t, --topic <topic>         Topic (required)\n"
+            << "  -g, --group-id <group>      Consumer group id (required)\n";
+            return 0;
+        }
+        else if ((arg == "-b" || arg == "--brokers") && i + 1 < argc) {
+            brokers = argv[++i];
+        }
+        else if ((arg == "-t" || arg == "--topic") && i + 1 < argc) {
+            topic_name = argv[++i];
+        }
+        else if ((arg == "-g" || arg == "--group-id") && i + 1 < argc) {
+            group_id = argv[++i];
+        }
+        else {
+            cout << "Unknown or invalid argument: " << arg << endl;
+            return 1;
+        }
     }
-    catch (exception& ex) {
-        cout << "Error parsing options: " << ex.what() << endl;
-        cout << endl;
-        cout << options << endl;
+
+    if (brokers.empty() || topic_name.empty() || group_id.empty()) {
+        cout << "Error: missing required arguments\n";
         return 1;
     }
 
