@@ -142,7 +142,7 @@ add_subdirectory(src)
 add_subdirectory(include/cppkafka)
 
 # Examples target
-if (NOT CPPKAFKA_DISABLE_EXAMPLES AND Boost_PROGRAM_OPTIONS_FOUND)
+if (NOT CPPKAFKA_DISABLE_EXAMPLES)
     add_subdirectory(examples)
 else()
     message(STATUS "Disabling examples")
